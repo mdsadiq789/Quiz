@@ -1,12 +1,13 @@
 package com.fibr.quiz.utils;
 
+import com.fibr.quiz.entity.UserEntity;
 import com.fibr.quiz.request.CreateUserAccountRequest;
 import org.apache.commons.lang3.StringUtils;
 
 public class Utils {
 
     //todo
-    public String createAccessToken(CreateUserAccountRequest request) {
+    public String createAccessToken(UserEntity request) {
         return StringUtils.EMPTY;
     }
 

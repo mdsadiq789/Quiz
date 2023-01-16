@@ -2,6 +2,7 @@ package com.fibr.quiz.entity;
 
 import com.fibr.quiz.enums.Status;
 import lombok.Builder;
+import lombok.Setter;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -12,6 +13,7 @@ import java.util.Date;
 
 @Entity
 @Builder
+@Setter
 public class AccessTokenEntity {
 
     @Id

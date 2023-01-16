@@ -7,6 +7,7 @@ import com.fibr.quiz.exception.UserException;
 import com.fibr.quiz.repository.AccessTokenRepository;
 import com.fibr.quiz.repository.UserRepository;
 import com.fibr.quiz.request.CreateUserAccountRequest;
+import com.fibr.quiz.request.LoginRequest;
 import com.fibr.quiz.response.UserAccountCreateResponse;
 import com.fibr.quiz.utils.Constant;
 import com.fibr.quiz.utils.Utils;
@@ -17,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.Objects;
 
 @Service
 public class UserService {
@@ -30,15 +32,17 @@ public class UserService {
     @Autowired
     Utils utils;
     public ResponseEntity<?> createAccount(CreateUserAccountRequest request) throws UserException {
-        String accessToken = utils.createAccessToken(request);
-        if(!StringUtils.isEmpty(accessToken)){
+
+
+        UserEntity userEntity = createUserEntity(request);
+
+        if(userRepository.existsUserName(request.getUserName())){
             throw new UserException(Constant.USER_ALREADY_PRESENT);
         }
-
+        userRepository.save(userEntity);
+        String accessToken = utils.createAccessToken(userEntity);
         accessTokenRepository.save(AccessTokenEntity.builder().accessToken(accessToken)
                 .status(Status.ACTIVE).createdAt(new Date()).updatedAt(new Date()).build());
-        UserEntity userEntity = createUserEntity(request);
-        userRepository.save(userEntity);
 
         UserAccountCreateResponse response = UserAccountCreateResponse.builder()
                 .UserProfileId(userEntity.getId()).userName(userEntity.getUserName()).message(Constant.USER_CREATED).build();
@@ -49,5 +53,24 @@ public class UserService {
         String hashCode = utils.createHashCode(request.getPassword());
         return  UserEntity.builder().userName(request.getUserName())
                 .email(request.getEmail()).passCode(hashCode).createdAt(new Date()).build();
+    }
+
+    public ResponseEntity<?> loginAccount(LoginRequest request) throws UserException {
+
+        String hashCode = utils.createHashCode(request.getPassword());
+        UserEntity entity = userRepository.findByUserNameAndPassCode(request.getUserName(), hashCode);
+        if(Objects.isNull(entity)){
+            throw new UserException(Constant.USER_NOT_PRESENT);
+        }
+        AccessTokenEntity accessTokenEntity = AccessTokenEntity.builder().accessToken(utils.createAccessToken(entity)).status(Status.ACTIVE).createdAt(new Date()).updatedAt(new Date()).build();
+        return new ResponseEntity<>(accessTokenEntity, HttpStatus.OK);
+    }
+
+    public ResponseEntity<?> logoutAccount(String accessToken) throws UserException {
+
+        AccessTokenEntity accessTokenEntity = accessTokenRepository.findByAccessToken(accessToken);
+        accessTokenEntity.setStatus(Status.INACTIVE);
+        accessTokenRepository.save(accessTokenEntity);
+        return new ResponseEntity<>(accessTokenEntity, HttpStatus.OK);
     }
 }
